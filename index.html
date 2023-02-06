@@ -1,31 +1,254 @@
-<html> 
+<!DOCTYPE html>
+<html>
 
-    <head>
-        <title>
-            NAG
-        </title>
-        <style> 
-             
-        </style>
+<head>
+    <title>
+        Pong
+    </title>
+    <style>
+        /* makes canvas flush with top left + remove scroll bars*/
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
 
-    </head>
+</head>
 
-    <body>
-        <canvas id="canv">
+<body>
+    <canvas id="canv">
 
-        </canvas>
-        <script>
-            let pufferfish = "Dangerous"
-            console.log(pufferfish)
+    </canvas>
 
-            // grab id of variable
-            let canvas = document.querySelector("#canv")
-            
-            //Tell canvas how to draw (context)
-            let ctx = canvas.getContext("2d")
-            ctx.fillRect(50,50,100,150)
-        </script>
-        
-    </body>
+    <script>
+        // All this is JavaScript shenanigans
+
+
+        // grab id of variable
+        let canvas = document.querySelector("#canv")
+
+        //Tell canvas how to draw (context)
+        let ctx = canvas.getContext("2d")
+
+        // Listen for keyboard events
+        let keysDown = [] // all elements are listed as "falsey" which is undefined
+        document.addEventListener("keydown", keyDown)
+        document.addEventListener("keyup", keyUp)
+
+        // Key up is more reliable
+        function keyUp(e) {
+
+            if (sceneIndex == 0) {
+                sceneIndex = 1
+                seconds = 0
+                pongVX = 3
+                pongVY = -2
+            } else {
+                keysDown[e.key] = false
+
+                if (e.key == "ArrowLeft") {
+                    console.log("Up Left")
+                }
+
+                if (e.key == "ArrowRight") {
+                    console.log("Up Right")
+                }
+            }
+
+            if (e.key == "p") {
+                isPaused = !isPaused
+            }
+
+            if (sceneIndex == 2) {
+                sceneIndex = 0;
+            }
+        }
+
+        // Keydown used to keep track of state of key
+        function keyDown(e) {
+            // Get key information using JavaScript's key->code
+            // using either keycode or key "ArrowLeft"
+
+            keysDown[e.key] = true
+
+            if (e.key == "ArrowLeft") {
+                console.log("Left")
+            }
+
+            if (e.key == "ArrowRight") {
+                console.log("Right")
+            }
+        }
+
+        let margin = canvas.width / 2
+        let size = 200
+        // let pongX = margin + size / 2
+        let pongx = Math.random() * ((margin + size) - margin) + margin
+        let pongY = margin + size / 2
+        let pongVX = 3
+        let pongVY = -2
+        let multiplier = 0
+
+        let paddleX = margin + size * 2
+        let paddleWidth = 75
+ 
+        let score = 0
+        let isPaused = false
+        let sceneIndex = 0
+        let speed = 0
+        let seconds = 1
+        let flag = 0
+
+        // 0 =  Scene, 1 = game, 2 = game over
+
+        // Model of game
+        function update() {
+            if (isPaused) {
+                return
+            }
+
+            if (sceneIndex != 1) {
+                pongX = Math.random() * ((margin + size) - margin) + margin
+                pongY = margin + size / 2
+                score = 0
+                paddleX = margin + size
+                multiplier = 0
+                speed = 0
+            } else {
+                seconds++
+                if (seconds % 300 == 0) {
+                    flag = 1
+                }
+                pongX += pongVX
+                pongY += pongVY
+
+                // collision
+                if (pongX > margin + size * 2) {
+                    pongVX = -Math.abs(pongVX)
+                }
+
+                if (pongX < margin) {
+                    pongVX = Math.abs(pongVX)
+                }
+
+                if (pongY > margin + size) {
+
+                    if (pongX > paddleX - paddleWidth / 2 && pongX < paddleX + paddleWidth / 2) {
+                        score += 1
+
+                        if (flag == 1) {
+                            speed += 1
+                            pongVY = -Math.abs(pongVY) - (Math.log2(speed) / 2)
+                            if (pongVX < 0) {
+                                pongVX -= Math.log2(speed) / 2 
+                            } else {
+                                pongVX += Math.log2(speed) / 2 
+                            }
+                            flag = 0
+                            multipler += 0.25
+                        } else {
+                            pongVY = -Math.abs(pongVY)
+                        }
+                    } else {
+                        sceneIndex = 2 
+                    }
+                }
+
+                if (pongY < margin) {
+                    pongVY = Math.abs(pongVY)
+                }
+
+                // Pool KB for user input
+
+                if (keysDown["ArrowRight"]) {
+                    paddleX += 5 * (1 + Math.abs(multiplier))
+                }
+
+                if (paddleX - paddleWidth / 2 < margin) {
+                    paddleX = margin + paddleWidth / 2
+                }
+
+                if (keysDown["ArrowLeft"]) {
+                    paddleX -= 5 * (1 + Math.abs(multiplier))
+                }
+
+                if (paddleX + paddleWidth / 2 > (size * 2) + margin) {
+                    paddleX = size * 2 + margin - paddleWidth / 2
+                }
+            }
+        }
+
+        // The view of the game
+        function draw() {
+
+            if (sceneIndex == 0) {
+                canvas.width = window.innerWidth
+                canvas.height = window.innerHeight
+                ctx.fillStyle = "black"
+                ctx.fillRect(0, 0, canvas.width, canvas.height)
+                ctx.fillStyle = "white"
+                ctx.font = "30px Verdana"
+                ctx.textAlign = "center"
+                ctx.fillText("Pong", canvas.width / 2 , canvas.height / 2)
+            } else if (sceneIndex == 1) {
+
+                // make canvas fill entire screen
+                canvas.width = window.innerWidth
+                canvas.height = window.innerHeight
+
+                ctx.fillStyle = "green"
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = "black"
+                ctx.beginPath()
+
+                // draw box
+                ctx.moveTo(margin, margin)
+                ctx.lineTo(margin + size * 2 , margin)
+                ctx.lineTo(margin + size * 2, margin + size)
+                ctx.moveTo(margin, margin + size)
+                ctx.lineTo(margin, margin)
+                ctx.stroke()
+
+                ctx.fillStyle = "blue"
+                // draw circle
+                ctx.beginPath()
+                ctx.arc(pongX, pongY, 5, 0, Math.PI * 2)
+                ctx.fill()
+
+                // draw paddle
+                ctx.beginPath()
+                ctx.moveTo(paddleX - paddleWidth / 2, size + margin)
+                ctx.lineTo(paddleX + paddleWidth / 2, size + margin)
+                ctx.stroke()
+                ctx.textAlign = "center"
+                ctx.font = "30px Verdana"
+                ctx.fillText("Score:" + score, canvas.width / 2 , canvas.height / 1.5)
+                ctx.fillText("Speed:" + speed, canvas.width / 2 , canvas.height / 1.3 )
+                // ctx.fillText("VY:" + pongVY, canvas.width / 2 , canvas.height / 1.4 )
+
+            } else {
+                canvas.width = window.innerWidth
+                canvas.height = window.innerHeight
+                ctx.fillStyle = "red"
+                ctx.fillRect(0, 0, canvas.width, canvas.height)
+                ctx.fillStyle = "white"
+                ctx.font = "30px Verdana"
+                ctx.textAlign = "center"
+                ctx.fillText("Game Over", canvas.width / 2 , canvas.height / 2)
+            }
+
+        }
+
+        function gameLoop() {
+            update()
+            draw()
+        }
+
+        setInterval(gameLoop, 1000 / 30)
+
+    </script>
+
+</body>
 
 </html>
