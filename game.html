@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        Untitled Game
+    </title>
+    <style>
+        /* makes canvas flush with top left + remove scroll bars*/
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+
+</head>
+
+<body>
+    <canvas id="canv">
+
+    </canvas>
+
+    <script>
+
+        // grab id of variable
+        let canvas = document.querySelector("#canv")
+
+        //Tell canvas how to draw (context)
+        let ctx = canvas.getContext("2d")
+
+        // Listen for keyboard events
+        let keysDown = [] // all elements are listed as "falsey" which is undefined
+        document.addEventListener("keydown", keyDown)
+        document.addEventListener("keyup", keyUp)
+
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+
+        let isPaused = false
+
+        let maxX = canvas.width
+        let maxY = canvas.height
+        let lWall = maxX * .1
+        let rWall = maxX * .9
+        let ceiling = maxY / 5
+        let floor = maxY / 1.25
+        let size = 10
+        let accel = 2
+
+        let LX = maxX / 2 - size/2
+        let TY = ceiling
+        let BY = TY + size
+        let RX = LX + size
+        let falling = true
+        
+        let VY = 2
+        let time = 0
+
+        // Key up is more reliable
+        function keyUp(e) {
+
+            
+            keysDown[e.key] = false
+
+            if (e.key == "p") {
+                isPaused = !isPaused
+            }
+
+        }
+
+        // Keydown used to keep track of state of key
+        function keyDown(e) {
+            // Get key information using JavaScript's key->code
+            // using either keycode or key "ArrowLeft"
+
+            keysDown[e.key] = true
+        }
+
+        // Model of game
+        function update() {
+            if (isPaused) {
+                return
+            }
+            // console.log(VY)
+            // if not on floor
+            if (falling ==  true) {
+                
+                VY += Math.pow(accel, 0.25)
+                
+                // if it would go past the floor
+                if (BY + VY >= floor) {
+                    BY = floor
+                    TY = floor - size
+                    VY = 0
+                    falling = false
+                } else {
+                    // console.log("BY:", BY)
+                    BY += VY
+                    TY = BY - size
+                }
+            } else {
+                // console.log("Grounded")
+                VY = 0
+                falling = false
+            }
+            
+            if (keysDown["ArrowRight"]) {
+
+                if (RX + 5 >= rWall) {
+                    RX = rWall - 1
+                    LX = RX - size
+                    console.log("Collide")
+                } else {
+                    LX += 5
+                    RX += 5
+                }
+            }
+
+            if (keysDown["ArrowLeft"]) {
+                if (LX - 5 <= lWall) {
+                    LX = lWall + 1
+                    RX = LX + size
+                    console.log("Collide")
+                } else {
+                    LX -= 5
+                    RX -= 5
+                }
+            }
+
+            if (keysDown["ArrowUp"]) {
+                console.log(VY)
+                falling = true
+                BY -= 5
+                TY -= 5
+                time++
+                if (time < 20 && time > 0) {
+                    VY -= 1
+                }
+                // ask how to make a realistic jump?
+            } else {
+                accel = 2
+                time = 0
+            }
+
+        }
+
+        // The view of the game
+        function draw() {
+
+            // Fill canvas in with black
+            canvas.width = window.innerWidth
+            canvas.height = window.innerHeight
+            ctx.fillStyle = "black"
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+            ctx.strokeStyle = "white"
+            ctx.beginPath()
+            ctx.moveTo(lWall, ceiling)
+            ctx.lineTo(rWall, ceiling)
+            ctx.lineTo(rWall, floor)
+            ctx.lineTo(lWall, floor)
+            ctx.lineTo(lWall, ceiling)
+            ctx.stroke()
+
+            ctx.fillStyle = "red"
+            ctx.fillRect(LX, TY, size, size)
+        }
+
+        function gameLoop() {
+            draw()
+            update()
+        }
+
+        setInterval(gameLoop, 1000 / 30)
+
+    </script>
+
+</body>
+
+</html>
