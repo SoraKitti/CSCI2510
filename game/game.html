@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    
+    <title>
+        Untitled Game
+    </title>
+    <style>
+        /* makes canvas flush with top left + remove scroll bars*/
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+
+</head>
+
+<body>
+    <canvas id="canv">
+
+    </canvas>
+    <script type = "module">
+        import "./engine/gameEngine.js"
+        import "./game.js"
+
+        start("Untitled Game", {aspectRatio:16/9, logicalWidth:100})
+    </script>
+
+</body>
+
+</html>
