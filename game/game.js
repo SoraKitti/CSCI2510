@@ -54,10 +54,8 @@ class PlayerComponent extends Component {
         let wallsGameObject = GameObject.getObjectByName("WallsGameObject1")
         this.floor = wallsGameObject.transform.BY
         this.transform.size = 10
-        this.transform.LX = window.innerWidth / 2 - this.transform.size / 2
-        this.transform.RX = this.transform.LX + this.transform.size
-        this.transform.BY = this.floor - 1
-        this.transform.TY = this.transform.BY - this.transform.size
+        this.transform.BY = this.floor
+        this.transform.TY = this.floor - this.transform.size
         this.jumping = false
         this.canJump = true
         this.grounded = true
@@ -270,15 +268,12 @@ function detectPlatformCollision(platform, player) {
 class PlatformsComponent extends Component {
     name = "PlatformComponent"
     start() {
-
-        // variable to track if the player is currently on this platform
-        let hasPlayer = false
     }
 
     update() {
         let player1 = GameObject.getObjectByName("PlayerGameObject1")
         let player2 = GameObject.getObjectByName("PlayerGameObject2")
-
+        
         detectPlatformCollision(this, player1)
         detectPlatformCollision(this, player2)
     }
@@ -313,13 +308,15 @@ function detectWallsCollision(walls, player) {
 }
 
 class WallsComponent extends Component {
-    name = "WallsComponent"
     update() {
-        let player1 = GameObject.getObjectByName("PlayerGameObject1")
-        let player2 = GameObject.getObjectByName("PlayerGameObject2")
-
-        detectWallsCollision(this, player1)
-        detectWallsCollision(this, player2)
+        if (this.parent.name == "WallsGameObject1") {
+            let player = GameObject.getObjectByName("PlayerGameObject1")
+            detectWallsCollision(this, player)
+        } else {
+            let player = GameObject.getObjectByName("PlayerGameObject2")
+            detectWallsCollision(this, player)
+        }
+        
     }
 
     draw(ctx) {
@@ -343,11 +340,12 @@ function createPlatform(TY, BY, LX, RX) {
 
 class MainCameraComponent extends Component {
     start() {
-
+        this.transform.sx = 0.1
+        this.transform.sy = 0.1
     }
 
     update() {
-        this.transform.x = 50
+        this.transform.x = 0
     }
 }
 
@@ -358,46 +356,59 @@ class MainScene extends Scene {
         wallsGameObject1.addComponent(new WallsComponent())
         wallsGameObject1.name = "WallsGameObject1"
         let wallsComponent1 = wallsGameObject1.getComponent("WallsComponent")
-        wallsComponent1.transform.TY = window.innerHeight / 5
-        wallsComponent1.transform.LX = window.innerWidth * .1
-        wallsComponent1.transform.RX = window.innerWidth * .9
-        wallsComponent1.transform.BY = window.innerHeight / 1.25
+        wallsComponent1.transform.TY = -200
+        wallsComponent1.transform.LX = -450
+        wallsComponent1.transform.RX = -25
+        wallsComponent1.transform.BY = 200
         this.addGameObject(wallsGameObject1)
         
-        let floor = window.innerHeight / 1.25
+        let wallsGameObject2 = new GameObject("WallsGameObject")
+        wallsGameObject2.addComponent(new WallsComponent())
+        wallsGameObject2.name = "WallsGameObject2"
+        let wallsComponent2 = wallsGameObject2.getComponent("WallsComponent")
+        wallsComponent2.transform.TY = -200
+        wallsComponent2.transform.LX = 25
+        wallsComponent2.transform.RX = 450
+        wallsComponent2.transform.BY = 200
+        this.addGameObject(wallsGameObject2)
+        
+        let floor = wallsComponent1.transform.BY
         
         // figure out how to change the platform locations to be absolute locations instead of according to the window size
-        let platform1GameObject = createPlatform(floor * .88, floor * .88 + 10, window.innerWidth * .1 * 2, window.innerWidth * .1 * 3)
+        let platform1GameObject = createPlatform(125, 135, -300, -200)
         platform1GameObject.name = "Platform1"
+        platform1GameObject.playerNum = 1
         this.addGameObject(platform1GameObject)
-        
-        let platform2GameObject = createPlatform(floor * .77, floor * .77 + 10, window.innerWidth * .1 * 4, window.innerWidth * .1 * 5)
+
+        let platform2GameObject = createPlatform(125, 135, 300, 200)
         platform2GameObject.name = "Platform2"
+        platform2GameObject.playerNum = 2
         this.addGameObject(platform2GameObject)
-        
-        let platform3GameObject = createPlatform(floor * .66, floor * .66 + 10, window.innerWidth * .1 * 6, window.innerWidth * .1 * 7)
-        platform3GameObject.name = "Platform3"
-        this.addGameObject(platform3GameObject)
         
         let playerGameObject1 = new GameObject("PlayerGameObject1")
         playerGameObject1.addComponent(new PlayerComponent("PlayerComponent"))
-        playerGameObject1.getComponent("PlayerComponent").color = "red"
-        playerGameObject1.getComponent("PlayerComponent").playerNum = 1
+        let playerComponent1 = playerGameObject1.getComponent("PlayerComponent")
+        playerComponent1.color = "red"
+        playerComponent1.playerNum = 1
+        playerComponent1.transform.LX = -250
+        playerComponent1.transform.RX = playerComponent1.transform.LX + playerComponent1.transform.size
         this.addGameObject(playerGameObject1)
         
         let playerGameObject2 = new GameObject("PlayerGameObject2")
         playerGameObject2.addComponent(new PlayerComponent("PlayerComponent"))
-        playerGameObject2.getComponent("PlayerComponent").color = "blue"
-        playerGameObject2.getComponent("PlayerComponent").playerNum = 2
+        let playerComponent2 = playerGameObject2.getComponent("PlayerComponent")
+        playerComponent2.color = "blue"
+        playerComponent2.playerNum = 2
+        playerComponent2.transform.LX = 250
+        playerComponent2.transform.RX = playerComponent2.transform.LX + playerComponent2.transform.size
         this.addGameObject(playerGameObject2)
         
-        Camera.main.parent.addComponent(new MainCameraComponent())
+        let camera = Camera.main.parent.addComponent(new MainCameraComponent())
+        
+        
     }
 }
 
 let mainScene = new MainScene()
 SceneManager.addScene(mainScene)
-
-// TODO: ASPECT RATIO STUFF STOP USING WINDOW WIDTH AND HEIGHT
-
 
