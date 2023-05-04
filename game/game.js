@@ -54,8 +54,8 @@ class PlayerComponent extends Component {
         let wallsGameObject = GameObject.getObjectByName("WallsGameObject1")
         this.floor = wallsGameObject.transform.BY
         this.transform.size = 10
-        this.transform.BY = this.floor
-        this.transform.TY = this.floor - this.transform.size
+        // this.transform.BY = this.floor
+        this.transform.TY = this.transform.BY - this.transform.size
         this.jumping = false
         this.canJump = true
         this.grounded = true
@@ -70,10 +70,6 @@ class PlayerComponent extends Component {
     }
 
     update() {
-        // check if you have passed max jumping time
-        if (this.time <= 0) {
-            this.jumping = false
-        }
 
         // prevents double jumping by creating canJump flag
         if (!this.grounded && !this.jumping) {
@@ -142,8 +138,8 @@ class PlayerComponent extends Component {
 
             // initial jump, increase the position off of the ground and change initial velocity
             if (this.canJump && this.grounded) {
-                this.transform.BY -= 3
-                this.transform.TY -= 3
+                this.transform.BY -= 1
+                this.transform.TY -= 1
                 this.transform.VY = -2
                 this.jumping = true
                 this.canJump = false
@@ -158,7 +154,7 @@ class PlayerComponent extends Component {
 
                     // give slight speeding up to jumping to make it feel more "dynamic?" to a certain max speed
                     if (this.transform.VY > -5) {
-                        this.transform.VY -= 0.5
+                        this.transform.VY -= 0.33
                     } else {
                         this.transform.VY = -5
                     }
@@ -191,8 +187,10 @@ class PlayerComponent extends Component {
         this.transform.RX = this.transform.LX + this.transform.size
 
         // update position based on vertical velocity
-        this.transform.BY += this.transform.VY
-        this.transform.TY = this.transform.BY - this.transform.size
+        if (!this.grounded) {
+            this.transform.BY += this.transform.VY
+            this.transform.TY = this.transform.BY - this.transform.size
+        }
     }
 
     draw(ctx) {
@@ -217,16 +215,20 @@ function drawPlatform(TY, BY, LX, RX) {
 // detects collsion between platform and player
 function detectPlatformCollision(platform, player) {
 
+    // console.log("Checking collisions for: " + platform.parent.name)
     let playerComponent = player.getComponent("PlayerComponent")
-    // if statements to catch if the player lands on a platform
-    if (player.transform.BY < platform.transform.TY && (player.transform.RX >= platform.transform.LX - player.transform.size) && (player.transform.LX <= platform.transform.RX + player.transform.size)) {
-        if (player.transform.BY + player.transform.VY > platform.transform.TY) {
+
+    // if statements to catch if the player lands on a platform  
+    if (player.transform.BY <= platform.transform.TY && (player.transform.RX >= platform.transform.LX - player.transform.size) && (player.transform.LX <= platform.transform.RX + player.transform.size)) {
+        /* ***Fails if you hold jump???***  */
+        if ((player.transform.BY + player.transform.VY >= platform.transform.TY) && !platform.hasPlayer) {
             player.transform.VY = 0
             playerComponent.grounded = true
             player.transform.BY = platform.transform.TY
             player.transform.TY = player.transform.BY - player.transform.size
             // land on platform
             platform.hasPlayer = true
+            console.log("Landed on " + platform.parent.name)
         }
 
         // if statement if the player bumps their head on the platform from below
@@ -237,26 +239,35 @@ function detectPlatformCollision(platform, player) {
             playerComponent.falling = true
             playerComponent.time = -1
             // bump head
+            console.log("bump")
         }
 
         // make it so that it has to be on that platform first before it can slip off
-    } else if ((player.transform.RX <= platform.transform.LX - player.transform.size / 2 || player.transform.LX >= platform.transform.RX) && platform.hasPlayer) {
+    } else if ((player.transform.RX <= platform.transform.LX || player.transform.LX >= platform.transform.RX) && platform.hasPlayer) {
         playerComponent.grounded = false
         //slip off
         platform.hasPlayer = false
-    }
+        console.log("Slipped off of " + platform.parent.name)
+    } 
 
+    
     // handles collisions if you don't clear the jump and hit the side
     let downDist = Math.abs(player.transform.BY - platform.transform.TY)
+    
+    if (downDist >= player.transform.size) {
+        platform.hasPlayer = false
+    }
 
     if ((player.transform.LX + player.transform.LV < platform.transform.RX) && //if player would move left past the right side of a platform
-        ((downDist <= player.transform.size * 2) && player.transform.LX >= platform.transform.RX) && !platform.hasPlayer) { // the player is within a certain range of the platform vertically and is to the right of the platform
+        ((downDist <= player.transform.size * 1.5) && player.transform.LX >= platform.transform.RX) && !platform.hasPlayer) { // the player is within a certain range of the platform vertically and is to the right of the platform
 
         player.transform.LV = 0
         player.transform.LX = platform.transform.RX + 1
         player.transform.RX = player.transform.LX + player.transform.size
+        playerComponent.time = 21
+        // player.transform.VY = 0
     } else if ((player.transform.RX + player.transform.RV > platform.transform.LX) &&
-        ((downDist <= player.transform.size * 2) && player.transform.LX <= platform.transform.LX) && !platform.hasPlayer) {
+        ((downDist <= player.transform.size * 1.5) && player.transform.LX <= platform.transform.LX) && !platform.hasPlayer) {
 
         player.transform.RV = 0
         player.transform.RX = platform.transform.LX - 1
@@ -264,18 +275,20 @@ function detectPlatformCollision(platform, player) {
     }
 }
 
-
 class PlatformsComponent extends Component {
     name = "PlatformComponent"
     start() {
     }
 
     update() {
-        let player1 = GameObject.getObjectByName("PlayerGameObject1")
-        let player2 = GameObject.getObjectByName("PlayerGameObject2")
-        
-        detectPlatformCollision(this, player1)
-        detectPlatformCollision(this, player2)
+
+        if (this.parent.playerNum == 1) {
+            let player = GameObject.getObjectByName("PlayerGameObject1")
+            detectPlatformCollision(this, player)
+        } else {
+            let player = GameObject.getObjectByName("PlayerGameObject2")
+            detectPlatformCollision(this, player)
+        }
     }
 
     draw(ctx) {
@@ -310,17 +323,16 @@ function detectWallsCollision(walls, player) {
 class WallsComponent extends Component {
     update() {
         if (this.parent.name == "WallsGameObject1") {
-            let player = GameObject.getObjectByName("PlayerGameObject1")
+            let player = GameObject.getObjectByName("PlayerGameObject2")
             detectWallsCollision(this, player)
         } else {
-            let player = GameObject.getObjectByName("PlayerGameObject2")
+            let player = GameObject.getObjectByName("PlayerGameObject1")
             detectWallsCollision(this, player)
         }
         
     }
 
     draw(ctx) {
-
         drawPlatform(this.transform.TY, this.transform.BY, this.transform.LX, this.transform.RX)
     }
 }
@@ -330,12 +342,45 @@ function createPlatform(TY, BY, LX, RX) {
 
     let platformGameObject = new GameObject("PlatformGameObject")
     platformGameObject.addComponent(new PlatformsComponent())
-    platformGameObject.transform.BY = BY
     platformGameObject.transform.TY = TY
+    platformGameObject.transform.BY = BY
     platformGameObject.transform.LX = LX
     platformGameObject.transform.RX = RX
 
     return platformGameObject
+}
+
+function randomize() {
+    let x = Math.floor(Math.random() * (350 - 75 + 1) + 75)
+
+    return x
+}
+
+function randomizePlatforms (prevX, prevY, scene) {
+
+    let numPlatforms = 0
+
+    while (numPlatforms < 4) {
+        let randomX = randomize()
+        while (randomX > prevX && randomX < (prevX + 100)) {
+            randomX = randomize()
+        }
+        let platform1GameObject = createPlatform(prevY - 70, prevY - 60, randomX - 50, randomX + 50)
+        numPlatforms++
+        platform1GameObject.playerNum = 1
+        platform1GameObject.name = "BluePlatform"
+
+        let platform2GameObject = createPlatform(prevY - 70, prevY - 60, -(randomX + 50), -(randomX - 50))
+        platform2GameObject.playerNum = 2
+        platform2GameObject.name = "RedPlatform"
+        
+        prevY = platform1GameObject.transform.TY
+        prevX = platform1GameObject.transform.LX
+
+        scene.addGameObject(platform1GameObject)
+        scene.addGameObject(platform2GameObject)
+        
+    }
 }
 
 class MainCameraComponent extends Component {
@@ -346,66 +391,82 @@ class MainCameraComponent extends Component {
 
     update() {
         this.transform.x = 0
+        this.transform.y = -275
     }
 }
 
 class MainScene extends Scene {
     start() {
         // add all game objects into scene
+        
+        // WALLS GO FROM 25 - 450 HALF WAY IN BETWEEN IS 237.5
+        // Draw starting walls to confine players
         let wallsGameObject1 = new GameObject("WallsGameObject")
         wallsGameObject1.addComponent(new WallsComponent())
         wallsGameObject1.name = "WallsGameObject1"
         let wallsComponent1 = wallsGameObject1.getComponent("WallsComponent")
-        wallsComponent1.transform.TY = -200
+        wallsComponent1.transform.TY = -550
         wallsComponent1.transform.LX = -450
         wallsComponent1.transform.RX = -25
-        wallsComponent1.transform.BY = 200
+        wallsComponent1.transform.BY = 0
         this.addGameObject(wallsGameObject1)
         
         let wallsGameObject2 = new GameObject("WallsGameObject")
         wallsGameObject2.addComponent(new WallsComponent())
         wallsGameObject2.name = "WallsGameObject2"
         let wallsComponent2 = wallsGameObject2.getComponent("WallsComponent")
-        wallsComponent2.transform.TY = -200
+        wallsComponent2.transform.TY = -550
         wallsComponent2.transform.LX = 25
         wallsComponent2.transform.RX = 450
-        wallsComponent2.transform.BY = 200
+        wallsComponent2.transform.BY = 0
         this.addGameObject(wallsGameObject2)
         
-        let floor = wallsComponent1.transform.BY
+
+        // Create platforms, try to figure out how to randomize this stuff to make the game dynamic
         
-        // figure out how to change the platform locations to be absolute locations instead of according to the window size
-        let platform1GameObject = createPlatform(125, 135, -300, -200)
+        // starting platform | 4 platforms per "screen" move the camera up and reposition the platforms
+
+        // Red starter platform
+        let platform1GameObject = createPlatform(-50, -40, -287.5, -187.5)
         platform1GameObject.name = "Platform1"
-        platform1GameObject.playerNum = 1
+        platform1GameObject.playerNum = 2
         this.addGameObject(platform1GameObject)
 
-        let platform2GameObject = createPlatform(125, 135, 300, 200)
+        
+        // Blue platforms starter platform
+        let platform2GameObject = createPlatform(-50, -40, 187.5, 287.5)
         platform2GameObject.name = "Platform2"
-        platform2GameObject.playerNum = 2
-        this.addGameObject(platform2GameObject)
+        platform2GameObject.playerNum = 1
+        this.addGameObject(platform2GameObject)        
+        
+        // randomizePlatforms(287.5,-50, this)
+
+        // Add players
+        let playerGameObject2 = new GameObject("PlayerGameObject2")
+        playerGameObject2.addComponent(new PlayerComponent("PlayerComponent"))
+        let playerComponent2 = playerGameObject2.getComponent("PlayerComponent")
+        playerComponent2.color = "red"
+        playerComponent2.playerNum = 2
+        playerComponent2.transform.LX = -237.5 - (playerComponent2.transform.size / 2)
+        playerComponent2.transform.RX = playerComponent2.transform.LX + playerComponent2.transform.size
+        playerComponent2.transform.BY = 0
+        this.addGameObject(playerGameObject2)
         
         let playerGameObject1 = new GameObject("PlayerGameObject1")
         playerGameObject1.addComponent(new PlayerComponent("PlayerComponent"))
         let playerComponent1 = playerGameObject1.getComponent("PlayerComponent")
-        playerComponent1.color = "red"
+        playerComponent1.color = "blue"
         playerComponent1.playerNum = 1
-        playerComponent1.transform.LX = -250
+        playerComponent1.transform.LX = 237.5 - (playerComponent1.transform.size / 2)
         playerComponent1.transform.RX = playerComponent1.transform.LX + playerComponent1.transform.size
+        playerComponent1.transform.BY = 0
         this.addGameObject(playerGameObject1)
         
-        let playerGameObject2 = new GameObject("PlayerGameObject2")
-        playerGameObject2.addComponent(new PlayerComponent("PlayerComponent"))
-        let playerComponent2 = playerGameObject2.getComponent("PlayerComponent")
-        playerComponent2.color = "blue"
-        playerComponent2.playerNum = 2
-        playerComponent2.transform.LX = 250
-        playerComponent2.transform.RX = playerComponent2.transform.LX + playerComponent2.transform.size
-        this.addGameObject(playerGameObject2)
-        
         let camera = Camera.main.parent.addComponent(new MainCameraComponent())
-        
-        
+    }
+
+    update() {
+
     }
 }
 

@@ -171,51 +171,6 @@ function keyDown(e) {
     keysUp[e.key] = false
 }
 
-function engineUpdate() {
-    if (isPaused) {
-        return
-    }
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-
-    let scene = SceneManager.getActiveScene()
-    if (SceneManager.changedSceneFlag && scene.start) {
-        let camera = scene.gameObjects[0]
-        scene.gameObjects = []
-        scene.gameObjects.push(camera) // adding this breaks line 329??
-        
-        scene.start(ctx)
-        SceneManager.changedSceneFlag = false
-    }
-
-    // start unstarted GOs
-    for (let gameObject of scene.gameObjects) {
-        if (gameObject.start && !gameObject.started) {
-            gameObject.start(ctx)
-            gameObject.started = true
-        }
-    }
-
-    // start unstarted components
-    for(let gameObject of scene.gameObjects){
-        for(let component of gameObject.components){
-            if(component.start && !component.started){
-                component.start(ctx)
-                component.started = true
-            }
-        }
-    }
-
-    // update all components
-    for(let gameObject of scene.gameObjects){
-        for(let component of gameObject.components){
-            if(component.update){
-                component.update(ctx)
-            }
-        }
-    }
-}
-
 function engineDraw() {
     ctx.fillStyle = Camera.main.fillStyle
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
@@ -276,6 +231,53 @@ function engineDraw() {
         ctx.fillRect(canvas.width - amount, 0, amount, canvas.height);
     }
 }
+
+function engineUpdate() {
+    if (isPaused) {
+        return
+    }
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    let scene = SceneManager.getActiveScene()
+    if (SceneManager.changedSceneFlag && scene.start) {
+        let camera = scene.gameObjects[0]
+        scene.gameObjects = []
+        scene.gameObjects.push(camera) // adding this breaks line 329??
+        
+        scene.start(ctx)
+        SceneManager.changedSceneFlag = false
+    }
+
+    // start unstarted GOs
+    for (let gameObject of scene.gameObjects) {
+        if (gameObject.start && !gameObject.started) {
+            gameObject.start(ctx)
+            gameObject.started = true
+        }
+    }
+
+    // start unstarted components
+    for(let gameObject of scene.gameObjects){
+        for(let component of gameObject.components){
+            if(component.start && !component.started){
+                component.start(ctx)
+                component.started = true
+            }
+        }
+    }
+
+    // update all components
+    for(let gameObject of scene.gameObjects){
+        for(let component of gameObject.components){
+            if(component.update){
+                component.update(ctx)
+            }
+        }
+    }
+}
+
+
 
 function start(title, settings = {}) {
 
