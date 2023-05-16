@@ -1,6 +1,8 @@
 import "./Component.js"
 import "./Camera.js"
 import "./Vector2.js"
+import "./Text.js"
+import "./Time.js"
 
 class Globals {
     static requestedAspectRatio = 16/9
@@ -127,6 +129,14 @@ class GameObject{
         return this.components.find(c=>c.name == name)
     }
 
+    destroy(){
+        this.markedForDestroy = true;
+    }
+
+    doNotDestroyOnLoad(){
+        this.markedDoNotDestroyOnLoad = true
+    }
+
     static instantiate(gameObject) {
         SceneManager.getActiveScene().gameObjects.push(gameObject);
         if (gameObject.start && !gameObject.started) {
@@ -236,6 +246,7 @@ function engineUpdate() {
     if (isPaused) {
         return
     }
+    Time.update()
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
@@ -244,6 +255,15 @@ function engineUpdate() {
         let camera = scene.gameObjects[0]
         scene.gameObjects = []
         scene.gameObjects.push(camera) // adding this breaks line 329??
+        
+        let previousScene = SceneManager.getPreviousScene()
+        if (previousScene) {
+            for (let gameObject of previousScene.gameObjects) {
+                if (gameObject.markedDoNotDestroyOnLoad) {
+                    scene.gameObjects.push(gameObject)
+                }
+            }
+        }
         
         scene.start(ctx)
         SceneManager.changedSceneFlag = false
@@ -254,9 +274,11 @@ function engineUpdate() {
         if (gameObject.start && !gameObject.started) {
             gameObject.start(ctx)
             gameObject.started = true
+            console.log("Hello!!!!")
         }
     }
 
+    
     // start unstarted components
     for(let gameObject of scene.gameObjects){
         for(let component of gameObject.components){
@@ -266,6 +288,14 @@ function engineUpdate() {
             }
         }
     }
+    
+    let keptGameObjects = []
+    for (let gameObject of scene.gameObjects) {
+        if (!gameObject.markedForDestroy) {
+            keptGameObjects.push(gameObject)
+        }
+    }
+    scene.gameObjects = keptGameObjects
 
     // update all components
     for(let gameObject of scene.gameObjects){
@@ -276,8 +306,6 @@ function engineUpdate() {
         }
     }
 }
-
-
 
 function start(title, settings = {}) {
 
@@ -296,7 +324,7 @@ function start(title, settings = {}) {
         engineDraw()
     }
 
-    setInterval(gameLoop, 1000 / 60)
+    setInterval(gameLoop, 1000 * Time.deltaTime)
 }
 
 window.Scene = Scene
@@ -308,3 +336,4 @@ window.keysUp = keysUp
 window.canvas = canvas
 window.ctx = ctx
 window.Globals = Globals
+window.Text = Text
